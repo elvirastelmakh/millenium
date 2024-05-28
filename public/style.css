@@ -1,0 +1,39 @@
+td, th {
+    width: 300px;
+}
+form, hr {
+    margin-top: 20px;
+}
+input {
+    text-align: left;
+    margin-top: 10px;
+}
+label {
+    width: 100px;
+    text-align: right;
+}
+legend{
+    font-weight: bold;
+}
+#title {
+    width: 600px;
+}
+.center {
+    text-align: center;
+}
+input[type="submit"] {
+    background-color: green;
+    padding-left: 2rem;
+    padding-right: 2rem;
+    cursor: pointer;
+    color: white;
+    width: 100px;
+}
+input[type="reset"] {
+    background-color: red;
+    padding-left: 2rem;
+    padding-right: 2rem;
+    cursor: pointer;
+    color: white;
+    width: 100px;
+}

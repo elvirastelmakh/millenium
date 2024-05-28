@@ -1,0 +1,86 @@
+#ddev-generated
+
+http:
+  routers:
+    
+    
+    millenuim-web-80-http:
+      
+      rule: HostRegexp(`millenuim.ddev.site`)
+      
+      service: "millenuim-web-80-http"
+      tls: false
+      entrypoints:
+        - http-80
+    
+    
+    millenuim-web-8025-http:
+      
+      rule: HostRegexp(`millenuim.ddev.site`)
+      
+      service: "millenuim-web-8025-http"
+      tls: false
+      entrypoints:
+        - http-8025
+    
+    
+    
+    
+    
+    
+    millenuim-web-80-https:
+      
+      rule: HostRegexp(`millenuim.ddev.site`)
+      
+      service: "millenuim-web-80-https"
+      
+      tls: true
+      
+      entrypoints:
+        - http-443
+    
+    
+    millenuim-web-8025-https:
+      
+      rule: HostRegexp(`millenuim.ddev.site`)
+      
+      service: "millenuim-web-8025-https"
+      
+      tls: true
+      
+      entrypoints:
+        - http-8026
+    
+    
+
+  services:
+    
+    millenuim-web-80-http:
+      loadbalancer:
+        servers:
+          - url: http://ddev-millenuim-web:80
+    
+    millenuim-web-8025-http:
+      loadbalancer:
+        servers:
+          - url: http://ddev-millenuim-web:8025
+    
+    millenuim-web-80-https:
+    
+      loadbalancer:
+        servers:
+          - url: http://ddev-millenuim-web:80
+    
+    millenuim-web-8025-https:
+    
+      loadbalancer:
+        servers:
+          - url: http://ddev-millenuim-web:8025
+    
+
+
+tls:
+  certificates:
+    - certFile: /mnt/ddev-global-cache/traefik/certs/millenuim.crt
+      keyFile: /mnt/ddev-global-cache/traefik/certs/millenuim.key
+
