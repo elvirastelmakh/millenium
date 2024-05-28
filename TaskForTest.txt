@@ -15,40 +15,112 @@
 оптимизировать с учетом того, что в реальных условиях такие таблицы могут иметь большие размеры. 
 Пришлите DDL модифицированных таблиц.
 Опишите, что было изменено в таблицах, и с какой целью.
+    1. В таблице products можно добавить уникальный индекс по полям title и price, 
+       чтобы контролировать уникальность сочетания названия и цены товара (как я поняла из ТЗ, возможно в одном заказе увидеть товар
+       с одним и тем же названием, но с разной ценой).
+       Для более быстрого поиска и сортировки по названию, добавим индекс по полю title.
+       Также для хранения истории изменения цен можно создать отдельную таблицу `product_prices`.
+       Желательно задать дефолтные значения для названия и цены (позиции без названия и цены смысла не имеют).
+
+        CREATE TABLE `products` (
+        `id` int(11) NOT NULL AUTO_INCREMENT,
+        `title` varchar(255) DEFAULT '',
+        `price` decimal(10,2) DEFAULT 0.00,
+        PRIMARY KEY (`id`),
+        UNIQUE KEY `idx_products_title_price` (`title`,`price`),
+        KEY `idx_products_title` (`title`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+    2. В таблице user можно добавить уникальный индекс по полям first_name, second_name и birthday, 
+       чтобы контролировать уникальность сочетания ФИО и даты рождения клиента.
+       Также можно задать дефолтные значения для first_name и second_name 
+       (клиенты без имени и фамилии смысла не имеют).
+       Не совсем понятно, для чего в данной таблице поле created_at. Я бы его лучше удалила.
+
+        CREATE TABLE `user` (
+        `id` int(11) NOT NULL AUTO_INCREMENT,
+        `first_name` varchar(255) DEFAULT NULL,
+        `second_name` varchar(255) DEFAULT NULL,
+        `birthday` date DEFAULT NULL,
+        PRIMARY KEY (`id`),
+        UNIQUE KEY `idx_user_first_name_second_name_birthday` (`first_name`,`second_name`,`birthday`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+    
+    3. В таблице user_order есть смысл хранить ссылку на клиента, а заказанные товары с ценами уже в отдельной таблице.
+       Для однозначной идентификации заказа нам достаточно клиента и даты заказа, но для корректного отображения информации
+       о заказах клиентов нужно все же хранить номер заказа. Время создания заказа не нужно менять при обновлении, иначе смысл теряется.
+       Лучше создать отдельное поле для хранения времени обновления заказа (если нужна такая информация).
+       Чтобы обеспечить уникальность пары "клиент - заказ" создаем уникальный индекс по полям user_id и created_at.
+       Чтобы при выборке данных использовать join таблиц для более быстрого получения данных, добавляем внешний ключ
+       для связи поля user_id с идентификатором записи в таблице user.
+
+        CREATE TABLE `user_order` (
+        `id` int(11) NOT NULL AUTO_INCREMENT,
+        `user_id` int(11) NOT NULL,
+        `order_number` varchar(50) DEFAULT '',
+        `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+        `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+        PRIMARY KEY (`id`),
+        UNIQUE KEY `idx_user_order_user_created` (`user_id`,`created_at`),
+        CONSTRAINT `fk_user_order_user` FOREIGN KEY (`user_id`) REFERENCES `user` (`id`) ON DELETE CASCADE
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+    4. Для хранения списка заказанных товаров добавим таблицу `ordered_products`.
+       Для связи с заказом используем поле `order_id` и внешний ключ.
+       СОздадим уникальный индекс, так как не должно быть одинаковых наборов полей order_id, product_id, price.
+       Для связи с таблицей products создадим внешний ключ по product_id.
+       Для целей учета обычно в базе хранят также данные о заказанном количестве, цене и сумме товаров.
+       У нас есть цена в справочнике, но при оформлении конкретного заказа она может меняться (скидки, спецпредложения),
+       и окончательная цена указана все же в самом заказе.
+
+        CREATE TABLE `ordered_products` (
+        `id` int(11) NOT NULL AUTO_INCREMENT,
+        `order_id` int(11) NOT NULL,
+        `product_id` int(11) NOT NULL,
+        `quantity` int(11) NOT NULL DEFAULT 0,
+        `price` decimal(10,2) DEFAULT 0.00,
+        `sum` decimal(10,2) DEFAULT 0.00,
+        PRIMARY KEY (`id`),
+        UNIQUE KEY `idx_ordered_products_order_product_price` (`order_id`,`product_id`,`price`),
+        CONSTRAINT `fk_ordered_products_order` FOREIGN KEY (`order_id`) REFERENCES `user_order` (`id`) ON DELETE CASCADE,
+        CONSTRAINT `fk_ordered_products_product` FOREIGN KEY (`product_id`) REFERENCES `products` (`id`) ON DELETE CASCADE
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
 
 2. Ниже представлена иерархия классов. Какой прием ООП применяется при вызове метода go()?
-абстракция и полиморфизм
-abstract class Car
-{
-    abstract function go();
-}
+        abstract class Car
+        {
+            abstract function go();
+        }
 
-class RaceCar extends Car{
-    public function go()
-    {
-        return '280 km/h';
-    }
-}
+        class RaceCar extends Car{
+            public function go()
+            {
+                return '280 km/h';
+            }
+        }
 
-class Track extends  Car{
-    public function go()
-    {
-        return '80 km/h';
-    }
-}
-$queue = [];
-$queue[] = new Track();
-$queue[]  = new RaceCar();
+        class Track extends  Car{
+            public function go()
+            {
+                return '80 km/h';
+            }
+        }
+        $queue = [];
+        $queue[] = new Track();
+        $queue[]  = new RaceCar();
 
-foreach($queue as $row){
-    echo $row->go();
-}
+        foreach($queue as $row){
+            echo $row->go();
+        }
+    *** При вызове метода go() применяются приемы ООП: абстракция и полиморфизм.
 
 3. В чем отличие SQL от MySQL?
-MySQL - это система управления БД, которая позволяет хранить данные в организованном порядке.
-SQL - это язык запросов, который используется СУБД (для создания, редактирования, удаления БД и их таблиц, а также для работы с данными).
-SQL обращается к СУБД, MySQL - к БД
-Каждая СУБД использует определённый диалект языка SQL.
+    ***MySQL - это система управления БД, которая позволяет хранить данные в организованном порядке.
+    SQL - это язык запросов, который используется СУБД (для создания, редактирования, удаления БД и их таблиц, а также для работы с данными).
+    SQL обращается к СУБД, MySQL - к БД
+    Каждая СУБД использует определённый диалект языка SQL.
 
 
 4. Сделайте реализацию паттерна Singelton. Посмотрите, можно ли его применить в первом задании.
+   ***Реализован в классе Connection.
